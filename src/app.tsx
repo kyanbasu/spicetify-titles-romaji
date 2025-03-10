@@ -1,4 +1,19 @@
-import * as wanakana from "wanakana";
+import Kuroshiro from "kuroshiro";
+import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
+
+const kuroshiro = new Kuroshiro();
+let initializationPromise: Promise<void> | null = null;
+
+const initKuroshiro = () => {
+  if (!initializationPromise) {
+    initializationPromise = kuroshiro.init(
+      new KuromojiAnalyzer({
+        dictPath: "https://cdn.jsdelivr.net/npm/kuromoji/dict/",
+      })
+    );
+  }
+  return initializationPromise;
+};
 
 async function main() {
   while (!Spicetify?.showNotification) {
@@ -14,8 +29,6 @@ async function main() {
     if (!Spicetify.Player.data) return;
     const track = Spicetify.Player.data.item;
     if (track && track.metadata) {
-      if (wanakana.isRomaji(track.metadata.title)) return;
-
       convertRomaji();
     }
   });
@@ -24,20 +37,42 @@ async function main() {
 export default main;
 
 function convertRomaji() {
-  var timeout = 20;
-  const interval = setInterval(() => {
-    const titleElement = document.querySelector(".main-trackInfo-name span a");
-    if (titleElement?.textContent) {
-      clearInterval(interval);
-      titleElement.textContent = wanakana.toRomaji(titleElement.textContent);
-    }
+  try {
+    var timeout = 10;
+    const interval = setInterval(async () => {
+      const titleElement = document.querySelector(
+        ".main-trackInfo-name span a"
+      );
+      if (titleElement?.textContent) {
+        titleElement.textContent = await convertString(
+          titleElement.textContent
+        );
+      }
 
-    const nextList = document.querySelectorAll(".LineClamp");
-    nextList.forEach((element) => {
-      if (!element.textContent) return;
-      element.textContent = wanakana.toRomaji(element.textContent);
-    });
-    timeout--;
-    if (timeout <= 0) clearInterval(interval);
-  }, 100);
+      const nextList = document.querySelectorAll(".LineClamp");
+      nextList.forEach(async (element) => {
+        if (!element.textContent) return;
+        element.textContent = await convertString(element.textContent);
+      });
+
+      const headline = document.querySelector(".encore-text-headline-large");
+      if (!headline || !headline.textContent) return;
+      headline.textContent = await convertString(headline.textContent);
+
+      const tracklist = document.querySelectorAll(".main-trackList-rowTitle");
+      tracklist.forEach(async (element) => {
+        if (!element.textContent) return;
+        element.textContent = await convertString(element.textContent);
+      });
+      timeout--;
+      if (timeout <= 0) clearInterval(interval);
+    }, 200);
+  } catch (e) {
+    console.error(e);
+  }
 }
+
+const convertString = async (input: string) => {
+  await initKuroshiro();
+  return kuroshiro.convert(input, { to: "romaji" });
+};

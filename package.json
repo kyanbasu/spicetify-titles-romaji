@@ -11,9 +11,10 @@
   "devDependencies": {
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "kuroshiro-analyzer-kuromoji": "^1.1.0",
     "spicetify-creator": "^1.0.17"
   },
   "dependencies": {
-    "wanakana": "^5.3.1"
+    "kuroshiro": "^1.2.0"
   }
 }
